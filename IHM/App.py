@@ -37,11 +37,11 @@ def update_predictions(table_name):
     # Charger le modèle et le scaler pour chaque modèle
     models = {}
     scalers = {}
-    for model_name in ['exxon', 'saudi', 'total', 'ecopetrol']:
+    for model_name in ['exon', 'saudi', 'total', 'ecopetrol']:
         models[model_name], scalers[model_name] = load_model_and_scaler(model_name)
     
     # Récupérer la dernière date de la table
-    query_last_date = text(f"SELECT MAX(date) FROM {table_name}")
+    query_last_date = text(f"SELECT MAX(\"Date\") FROM {table_name}")
     with engine.connect() as conn:
         result = conn.execute(query_last_date).fetchone()
         last_date = result[0]
@@ -50,15 +50,15 @@ def update_predictions(table_name):
     today_date = datetime.today().date()
     if last_date < today_date:
         # Lire les nouvelles données à partir de la dernière date
-        query_data = text(f"SELECT date, close FROM {table_name} WHERE date > :last_date")
+        query_data = text(f"SELECT \"Date\", \"Close\" FROM {table_name} WHERE \"Date\" > :last_date")
         df = pd.read_sql(query_data, engine, params={'last_date': last_date})
         
         # Si des nouvelles données sont présentes, faire la prédiction
         if not df.empty:
-            df.set_index("date", inplace=True)
-            df = df[["close"]]
+            df.set_index("Date", inplace=True)
+            df = df[["Close"]]
             
-            for model_name in ['exxon', 'saudi', 'total', 'ecopetrol']:
+            for model_name in ['exon', 'saudi', 'total', 'ecopetrol']:
                 predictions = predict(models[model_name], scalers[model_name], df)
                 df[f'predicted_{model_name}'] = predictions
             
@@ -84,31 +84,54 @@ if st.sidebar.button('Mettre à jour les prédictions'):
     update_predictions(table_choice)
 
 # Onglets pour chaque modèle
-tabs = st.tabs(['Exxon', 'Saudi', 'Total', 'Ecopetrol'])
+tabs = st.tabs(['Exon', 'Saudi', 'Total', 'Ecopetrol'])
 
 # Afficher les données pour chaque modèle
-for tab, model_name in zip(tabs, ['exxon', 'saudi', 'total', 'ecopetrol']):
+for tab, model_name in zip(tabs, ['exon', 'saudi', 'total', 'ecopetrol']):
     with tab:
         st.header(f'Prédictions pour {model_name.capitalize()}')
         
         # Lire les données de la table sélectionnée
-        df = pd.read_sql_table(f'table_{model_name}', engine)
+        df = pd.read_sql_table(f'{model_name}', engine)
         
+        # Vérifier si la colonne 'Date' existe
+        if 'Date' not in df.columns:
+            st.write(f"Erreur: La colonne 'Date' est absente dans la table {model_name}.")
+            continue
+        
+        # Convertir la colonne 'Date' en datetime et gérer les NaT
+        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df = df.dropna(subset=['Date'])  # Supprimer les lignes avec des dates non valides
+
+        # Vérifier si la colonne 'Date' contient des valeurs valides
+        if df['Date'].isnull().all():
+            st.write(f"Erreur: La colonne 'Date' ne contient pas de dates valides dans la table {model_name}.")
+            continue
+
         # Sélectionner une date
-        selected_date = st.date_input(f'Sélectionnez une date pour {model_name.capitalize()}', min_value=df['date'].min(), max_value=df['date'].max())
+        min_date = df['Date'].min().date()
+        max_date = df['Date'].max().date()
+        selected_date = st.date_input(f'Sélectionnez une date pour {model_name.capitalize()}', min_value=min_date, max_value=max_date)
 
         # Afficher les prédictions et les valeurs close pour la date sélectionnée
         if selected_date:
-            df['date'] = pd.to_datetime(df['date'])
-            selected_data = df[df['date'] == selected_date]
+            selected_data = df[df['Date'] == pd.to_datetime(selected_date)]
             
             if not selected_data.empty:
-                st.write(selected_data[['date', 'close', f'predicted_{model_name}']])
+                columns_to_display = ['Date', 'Close']
+                pred_column = f'predicted_{model_name}'
+                if pred_column in selected_data.columns:
+                    columns_to_display.append(pred_column)
+                else:
+                    st.write(f"Erreur: La colonne '{pred_column}' est absente dans la table {model_name}.")
+                    continue
+                
+                st.write(selected_data[columns_to_display])
                 
                 # Afficher le graphique
                 plt.figure(figsize=(10, 6))
-                plt.plot(selected_data['date'], selected_data['close'], label='Vérité terrain')
-                plt.plot(selected_data['date'], selected_data[f'predicted_{model_name}'], label='Prédictions')
+                plt.plot(selected_data['Date'], selected_data['Close'], label='Vérité terrain')
+                plt.plot(selected_data['Date'], selected_data[pred_column], label='Prédictions')
                 plt.legend()
                 st.pyplot(plt)
             else:
