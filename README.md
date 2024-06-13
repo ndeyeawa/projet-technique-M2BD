@@ -12,12 +12,25 @@ PostgreSQL
 Power BI Desktop
 ## Installation
 ### Étape 1 : Cloner le Répertoire
-Clonez ce dépôt sur votre machine locale :
-
 ```sh
 git clone https://github.com/ndeyeawa/projet-technique-M2BD-G6.git 
 cd projet-technique-M2BD-G6
-
+```
 ### Étape 2 : Installer les Dépendances
+
+### Étape 3 : Configurer PostgreSQL
+Installer PostgreSQL :
+Téléchargez et installez PostgreSQL depuis le site officiel.
+Clonez ce dépôt sur votre machine locale :
 Installez les dépendances Python nécessaires :
+
+```sh
+pip install -r requirements.txt
+```
+
+
+
+```sh
+git clone https://github.com/ndeyeawa/projet-technique-M2BD-G6.git 
+cd projet-technique-M2BD-G6 ```
 
