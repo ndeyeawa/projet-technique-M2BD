@@ -15,7 +15,7 @@ Power BI Desktop
 Clonez ce dépôt sur votre machine locale :
 
 ```sh
-git clone https://github.com/votre-utilisateur/votre-repertoire.git 
-cd votre-repertoire
+git clone https://github.com/ndeyeawa/projet-technique-M2BD-G6.git 
+cd projet-technique-M2BD-G6
 
 
