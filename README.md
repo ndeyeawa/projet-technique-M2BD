@@ -18,4 +18,6 @@ Clonez ce dépôt sur votre machine locale :
 git clone https://github.com/ndeyeawa/projet-technique-M2BD-G6.git 
 cd projet-technique-M2BD-G6
 
+### Étape 2 : Installer les Dépendances
+Installez les dépendances Python nécessaires :
 
